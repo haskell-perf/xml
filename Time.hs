@@ -8,12 +8,13 @@ module Main (main) where
 import           Criterion.Main
 import           Criterion.Types
 import           Data.Book
-import qualified Data.ByteString
+import           Data.ByteString (ByteString)
 import qualified Data.ByteString.Lazy
 import           Data.Default
 import           Data.FileEmbed
 import qualified Text.XML
 import qualified Text.XML.DOM.Parser
+import qualified Text.XML.Expat.Tree
 import qualified Text.XML.Hexml
 import qualified Xeno.DOM
 import qualified Xmlbf
@@ -45,13 +46,18 @@ dom bs =
 #ifdef LIBXML
   , bench "libxml" $ whnfIO (Text.XML.LibXML.parseMemory bs)
 #endif
+  , bench "hexpat" $ nf
+    ( \input -> case Text.XML.Expat.Tree.parse' @ByteString @ByteString Text.XML.Expat.Tree.defaultParseOptions input of
+        Left _  -> error "Unexpected parse error"
+        Right v -> v )
+    bs
   , bench "xml-conduit" $ nf
     ( Text.XML.parseLBS_ def )
     ( Data.ByteString.Lazy.fromStrict bs )
   ]
 
 -- | Conversion from DOM to data type
-struct :: Data.ByteString.ByteString -> [Benchmark]
+struct :: ByteString -> [Benchmark]
 struct bs =
   [ bench "dom-parser" $ nf
     ( \doc -> case Text.XML.DOM.Parser.runDomParser doc (Text.XML.DOM.Parser.fromDom @Catalog) of
@@ -70,5 +76,5 @@ struct bs =
     ( Xeno.DOM.parse inputBs )
   ]
 
-inputBs :: Data.ByteString.ByteString
+inputBs :: ByteString
 inputBs = $(embedFile "in.xml")

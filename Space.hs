@@ -1,16 +1,18 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE TypeApplications #-}
 
 module Main (main) where
 
 import           Control.DeepSeq
-import qualified Data.ByteString
+import           Data.ByteString (ByteString)
 import qualified Data.ByteString.Lazy
 import           Data.Default
 import           Data.FileEmbed
 import qualified Foreign.ForeignPtr
 import qualified Text.XML
+import qualified Text.XML.Expat.Tree
 import qualified Text.XML.Hexml
 import           Weigh
 import qualified Xeno.DOM
@@ -23,7 +25,7 @@ main = mainWith $ do
   setColumns [Case, Allocated, Max, Live, GCs]
   dom inputBs
 
-dom :: Data.ByteString.ByteString -> Weigh ()
+dom :: ByteString -> Weigh ()
 dom bs = do
 #ifdef LIBXML
   io "libxml" Text.XML.LibXML.parseMemory bs
@@ -35,6 +37,11 @@ dom bs = do
     bs
   func "xeno"
     ( \input -> case Xeno.DOM.parse input of
+        Left _  -> error "Unexpected parse error"
+        Right v -> v )
+    bs
+  func "hexpat"
+    ( \input -> case Text.XML.Expat.Tree.parse' @ByteString @ByteString Text.XML.Expat.Tree.defaultParseOptions input of
         Left _  -> error "Unexpected parse error"
         Right v -> v )
     bs

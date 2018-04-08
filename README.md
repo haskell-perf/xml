@@ -23,6 +23,7 @@ stack bench
 | hexml | 1.787 ms |
 | xeno | 4.307 ms |
 | libxml | 21.69 ms |
+| hexpat | 133.4 ms |
 | xml-conduit | 173.7 ms |
 
 ## Space
@@ -36,4 +37,5 @@ stack test
 | libxml      |         480 |        160 |      4,656 |   0 |
 | hexml       |   1,118,744 |        216 |      4,520 |   0 |
 | xeno        |   8,184,976 |         64 |      4,344 |   2 |
+| hexpat      | 122,216,128 | 16,798,072 | 52,907,688 | 117 |
 | xml-conduit | 694,404,776 | 24,452,264 | 72,434,280 | 672 |

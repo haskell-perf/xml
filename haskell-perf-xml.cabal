@@ -49,6 +49,7 @@ test-suite space
                   , deepseq
                   , file-embed
                   , hexml
+                  , hexpat
                   , weigh
                   , xeno
                   , xml-conduit
@@ -69,6 +70,7 @@ benchmark time
                   , file-embed
                   , haskell-perf-xml
                   , hexml
+                  , hexpat
                   , xeno
                   , xml-conduit
                   , xmlbf
