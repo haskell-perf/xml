@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeApplications #-}
@@ -17,12 +18,15 @@ import qualified Text.XML.Hexml
 import qualified Xeno.DOM
 import qualified Xmlbf
 import qualified Xmlbf.Xeno
+#ifdef LIBXML
+import qualified Text.XML.LibXML
+#endif
 
 main :: IO ()
 main = defaultMainWith
   defaultConfig { csvFile = Just "out.csv" }
   [ bgroup "dom" (dom inputBs)
-  , bgroup "struct" (struct inputBs)
+  -- , bgroup "struct" (struct inputBs)
   ]
 
 -- | Conversion from 'Data.ByteString.ByteString' to DOM
@@ -38,8 +42,11 @@ dom bs =
         Left _  -> error "Unexpected parse error"
         Right v -> v )
     bs
+#ifdef LIBXML
+  , bench "libxml" $ whnfIO (Text.XML.LibXML.parseMemory bs)
+#endif
   , bench "xml-conduit" $ nf
-    ( \input -> Text.XML.parseLBS_ def input )
+    ( Text.XML.parseLBS_ def )
     ( Data.ByteString.Lazy.fromStrict bs )
   ]
 

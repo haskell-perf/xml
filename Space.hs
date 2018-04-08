@@ -1,4 +1,5 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE TemplateHaskell #-}
 
 module Main (main) where
@@ -13,6 +14,9 @@ import qualified Text.XML
 import qualified Text.XML.Hexml
 import           Weigh
 import qualified Xeno.DOM
+#ifdef LIBXML
+import qualified Text.XML.LibXML
+#endif
 
 main :: IO ()
 main = mainWith $ do
@@ -21,6 +25,9 @@ main = mainWith $ do
 
 dom :: Data.ByteString.ByteString -> Weigh ()
 dom bs = do
+#ifdef LIBXML
+  io "libxml" Text.XML.LibXML.parseMemory bs
+#endif
   func "hexml"
     ( \input -> case Text.XML.Hexml.parse input of
         Left _  -> error "Unexpected parse error"
@@ -32,12 +39,15 @@ dom bs = do
         Right v -> v )
     bs
   func "xml-conduit"
-    ( \input -> Text.XML.parseLBS_ def input )
+    ( Text.XML.parseLBS_ def )
     ( Data.ByteString.Lazy.fromStrict bs )
 
 inputBs :: Data.ByteString.ByteString
 inputBs = $(embedFile "in.xml")
 
--- Assuming that hexml DOM is strict (NF=WHNF)
+-- Assuming that DOM representation is strict (NF=WHNF)
 instance NFData Text.XML.Hexml.Node where rnf = rwhnf
 instance NFData (Foreign.ForeignPtr.ForeignPtr a) where rnf = rwhnf
+#ifdef LIBXML
+instance NFData Text.XML.LibXML.Document where rnf = rwhnf
+#endif

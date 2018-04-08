@@ -6,6 +6,10 @@ author:              Dmitry Bushev
 build-type:          Simple
 cabal-version:       >=1.10
 
+flag libxml
+  description: Enable libxml benchmarks
+  default:    False
+
 library
   exposed-modules:  Data.Book
   build-depends:    base
@@ -34,6 +38,9 @@ executable generate
   ghc-options:      -Wall -O2 -rtsopts
 
 test-suite space
+  if flag(libxml)
+    cpp-options: -DLIBXML
+    build-depends: libxml
   main-is:          Space.hs
   build-depends:    base
                   , bytestring
@@ -50,6 +57,9 @@ test-suite space
   ghc-options:      -Wall -O2 -rtsopts
 
 benchmark time
+  if flag(libxml)
+    cpp-options: -DLIBXML
+    build-depends: libxml
   main-is:          Time.hs
   build-depends:    base
                   , bytestring
