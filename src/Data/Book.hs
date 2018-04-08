@@ -1,15 +1,21 @@
+{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module Data.Book where
 
+import           Control.Applicative
+import           Control.DeepSeq
 import           Data.Char
 import           Data.Fixed
 import           Data.Text (Text)
 import qualified Data.Text as T
 import           Data.Time
+import           GHC.Generics (Generic)
 import           Test.QuickCheck
-import qualified Xmlbf
+import qualified Text.XML.DOM.Parser as XDP
 import qualified Text.XML.Writer as XW
+import qualified Xmlbf
 
 data Book = Book
   { author      :: Text
@@ -18,7 +24,9 @@ data Book = Book
   , price       :: Centi
   , publishDate :: Day
   , description :: Text
-  }
+  } deriving (Generic)
+
+instance NFData Book
 
 instance Arbitrary Book where
   arbitrary = Book
@@ -42,6 +50,14 @@ instance XW.ToXML Book where
     XW.element "publish_date" $ XW.content (T.pack . formatTime defaultTimeLocale "%F" $ publishDate b)
     XW.element "description" $ XW.content (description b)
 
+instance XDP.FromDom Book where
+  fromDom = XDP.inElem "book" $ Book
+    <$> XDP.inElem "author" XDP.textFromDom
+    <*> XDP.inElem "title" XDP.textFromDom
+    <*> XDP.inElem "genre" XDP.textFromDom
+    <*> XDP.inElem "price" (XDP.parseContent XDP.readContent)
+    <*> XDP.inElem "publish_date" (XDP.parseContent (parseTimeM True defaultTimeLocale "%F" . T.unpack))
+    <*> XDP.inElem "description" XDP.textFromDom
 
 instance Xmlbf.ToXml Book where
   toXml b =
@@ -61,10 +77,34 @@ instance Xmlbf.ToXml Book where
       ]
     ]
 
+instance Xmlbf.FromXml Book where
+  fromXml = Xmlbf.pElement "book" $ Book
+    <$> Xmlbf.pElement "author" Xmlbf.pText
+    <*> Xmlbf.pElement "title" Xmlbf.pText
+    <*> Xmlbf.pElement "genre" Xmlbf.pText
+    <*> Xmlbf.pElement "price" (Xmlbf.pText >>= Xmlbf.pRead)
+    <*> Xmlbf.pElement "publish_date" (Xmlbf.pText >>= parseTimeM True defaultTimeLocale "%F" . T.unpack)
+    <*> Xmlbf.pElement "description" Xmlbf.pText
+
 newtype Catalog = Catalog [Book]
+  deriving (Generic, NFData)
 
 instance Arbitrary Catalog where
   arbitrary = Catalog <$> listOf arbitrary
 
 instance XW.ToXML Catalog where
   toXML (Catalog books) = XW.element "catalog" $ mapM_ XW.toXML books
+
+instance XDP.FromDom Catalog where
+  fromDom = Catalog <$> XDP.inElemAll "catalog" XDP.fromDom
+
+instance Xmlbf.FromXml Catalog where
+  fromXml = Xmlbf.pElement "catalog" $ Catalog
+    <$> many Xmlbf.fromXml
+
+newtype Root = Root Catalog
+  deriving (Generic, NFData)
+
+instance Xmlbf.FromXml Root where
+  fromXml = Xmlbf.pElement "root" $ Root
+    <$> Xmlbf.fromXml
