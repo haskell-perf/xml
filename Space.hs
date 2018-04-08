@@ -17,7 +17,7 @@ import qualified Xeno.DOM
 main :: IO ()
 main = mainWith $ do
   setColumns [Case, Allocated, Max, Live, GCs]
-  dom medium
+  dom inputBs
 
 dom :: Data.ByteString.ByteString -> Weigh ()
 dom bs = do
@@ -35,8 +35,8 @@ dom bs = do
     ( \input -> Text.XML.parseLBS_ def input )
     ( Data.ByteString.Lazy.fromStrict bs )
 
-medium :: Data.ByteString.ByteString
-medium = $(embedFile "data/fabricated-211kb.xml")
+inputBs :: Data.ByteString.ByteString
+inputBs = $(embedFile "in.xml")
 
 -- Assuming that hexml DOM is strict (NF=WHNF)
 instance NFData Text.XML.Hexml.Node where rnf = rwhnf

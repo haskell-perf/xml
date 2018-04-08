@@ -1,1 +1,5 @@
 resolver: lts-11.1
+extra-deps:
+  - html-entities-1.1.4.2
+  - xmlbf-0.3
+  - xmlbf-xeno-0.1.1

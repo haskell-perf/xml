@@ -1,4 +1,3 @@
-{-# OPTIONS_GHC -fno-warn-orphans #-}
 {-# LANGUAGE TemplateHaskell #-}
 
 module Main (main) where
@@ -16,8 +15,7 @@ import qualified Xeno.DOM
 main :: IO ()
 main = defaultMainWith
   defaultConfig { csvFile = Just "out.csv" }
-  [ bgroup "4kb" (dom small)
-  , bgroup "211kb" (dom medium)
+  [ bgroup "dom" (dom inputBs)
   ]
 
 dom :: Data.ByteString.ByteString -> [Benchmark]
@@ -37,8 +35,5 @@ dom bs =
     ( Data.ByteString.Lazy.fromStrict bs )
   ]
 
-small :: Data.ByteString.ByteString
-small = $(embedFile "data/books-4kb.xml")
-
-medium :: Data.ByteString.ByteString
-medium = $(embedFile "data/fabricated-211kb.xml")
+inputBs :: Data.ByteString.ByteString
+inputBs = $(embedFile "in.xml")
