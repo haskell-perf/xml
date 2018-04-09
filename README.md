@@ -18,13 +18,13 @@ Conversion from `ByteString` to DOM
 stack bench
 ```
 
-| Name | Time |
-|------|------|
-| hexml | 1.787 ms |
-| xeno | 4.307 ms |
-| libxml | 21.69 ms |
-| hexpat | 133.4 ms |
-| xml-conduit | 173.7 ms |
+| Name | Language | Time |
+|------|----------|------|
+| hexml | C | 1.787 ms |
+| xeno | Haskell| 4.307 ms |
+| libxml | C | 21.69 ms |
+| hexpat | C | 133.4 ms |
+| xml-conduit | Haskell | 173.7 ms |
 
 ## Space
 
