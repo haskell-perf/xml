@@ -8,6 +8,7 @@
 module Main (main) where
 
 import           Control.DeepSeq
+import           Control.Monad.ST
 import           Criterion.Main
 import           Criterion.Types
 import           Data.Book
@@ -17,6 +18,7 @@ import qualified Data.Conduit
 import qualified Data.Conduit.List
 import           Data.Default
 import           Data.FileEmbed
+import           Data.STRef
 import           GHC.Generics (Generic)
 import qualified SAX
 import qualified SAX.Streaming
@@ -66,6 +68,20 @@ sax bs =
       (\v   -> (:v) . CloseTag)
       (\v   -> (:v) . CDATA)
       mempty )
+    bs
+  , bench "xeno process STRef" $ nf
+    ( \input -> runST $ do
+        ref <- newSTRef []
+        let add e = modifySTRef ref (e:)
+        Xeno.SAX.process
+          (add . OpenTag)
+          (\k -> add . Attribute k)
+          (add . EndOpenTag)
+          (add . Text)
+          (add . CloseTag)
+          (add . CDATA)
+          input
+        readSTRef ref )
     bs
   , bench "xeno process conduit" $ nf
     ( \input ->

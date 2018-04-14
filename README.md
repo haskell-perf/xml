@@ -35,7 +35,7 @@ Conversion from `ByteString` to a list of SAX events
 
 | Name | Language | Time |
 |------|----------|------|
-| xeno | Haskell | 31.24 ms |
+| xeno | Haskell | 25.15 ms |
 | sax | Haskell | 34.69 ms |
 | hexpat | C | 74.84 ms |
 | conduit | Haskell | 196.1 ms |
