@@ -10,8 +10,10 @@ import           Data.Char
 import           Data.Fixed
 import           Data.Text (Text)
 import qualified Data.Text as T
+import qualified Data.Text.Encoding as T
 import           Data.Time
 import           GHC.Generics (Generic)
+import qualified SAX
 import           Test.QuickCheck
 import qualified Text.XML.DOM.Parser as XDP
 import qualified Text.XML.Writer as XW
@@ -86,6 +88,17 @@ instance Xmlbf.FromXml Book where
     <*> Xmlbf.pElement "publish_date" (Xmlbf.pText >>= parseTimeM True defaultTimeLocale "%F" . T.unpack)
     <*> Xmlbf.pElement "description" Xmlbf.pText
 
+bookSaxParser :: SAX.SaxParser Book
+bookSaxParser = SAX.withTag "book" $ Book
+  <$> SAX.withTag "author" saxText
+  <*> SAX.withTag "title" saxText
+  <*> SAX.withTag "genre" saxText
+  <*> SAX.withTag "price" (read . T.unpack <$> saxText)
+  <*> SAX.withTag "publish_date" (saxText >>= parseTimeM True defaultTimeLocale "%F" . T.unpack)
+  <*> SAX.withTag "description" saxText
+  where
+    saxText = T.decodeUtf8 <$> SAX.bytes
+
 newtype Catalog = Catalog [Book]
   deriving (Generic, NFData)
 
@@ -102,9 +115,17 @@ instance Xmlbf.FromXml Catalog where
   fromXml = Xmlbf.pElement "catalog" $ Catalog
     <$> many Xmlbf.fromXml
 
+catalogSaxParser :: SAX.SaxParser Catalog
+catalogSaxParser = SAX.withTag "catalog" $ Catalog
+  <$> many bookSaxParser
+
 newtype Root = Root Catalog
   deriving (Generic, NFData)
 
 instance Xmlbf.FromXml Root where
   fromXml = Xmlbf.pElement "root" $ Root
     <$> Xmlbf.fromXml
+
+rootSaxParser :: SAX.SaxParser Root
+rootSaxParser = SAX.withTag "root" $ Root
+  <$> catalogSaxParser

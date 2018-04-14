@@ -12,11 +12,16 @@ stack exec generate
 
 ## Time
 
-Conversion from `ByteString` to DOM
+Columns:
+
+- Name - name of the package on Hackage
+- Language - pure Haskell or a C binding
 
 ``` bash
 stack bench
 ```
+
+Conversion from `ByteString` to DOM
 
 | Name | Language | Time |
 |------|----------|------|
@@ -25,6 +30,15 @@ stack bench
 | libxml | C | 21.69 ms |
 | hexpat | C | 133.4 ms |
 | xml-conduit | Haskell | 173.7 ms |
+
+Conversion from `ByteString` to a list of SAX events
+
+| Name | Language | Time |
+|------|----------|------|
+| xeno | Haskell | 31.24 ms |
+| sax | Haskell | 34.69 ms |
+| hexpat | C | 74.84 ms |
+| conduit | Haskell | 196.1 ms |
 
 ## Space
 
