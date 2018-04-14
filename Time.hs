@@ -34,7 +34,9 @@ import qualified Xeno.SAX
 import qualified Xmlbf
 import qualified Xmlbf.Xeno
 #ifdef LIBXML
+import qualified Data.XML.Types
 import qualified Text.XML.LibXML
+import qualified Text.XML.LibXML.SAX
 #endif
 
 data XenoEvent
@@ -106,6 +108,22 @@ sax bs =
   , bench "hexpat" $ nf
     ( Text.XML.Expat.SAX.parse @ByteString @ByteString Text.XML.Expat.SAX.defaultParseOptions )
     ( Data.ByteString.Lazy.fromStrict bs )
+#ifdef LIBXML
+  , bench "libxml" $ nf
+    ( \input -> runST $ do
+        ref <- newSTRef []
+        p <- Text.XML.LibXML.SAX.newParserST Nothing
+        let
+          add e     = modifySTRef ref (e:) >> return True
+          set cb st = Text.XML.LibXML.SAX.setCallback p cb st
+        set Text.XML.LibXML.SAX.parsedBeginElement (\n -> add . Data.XML.Types.EventBeginElement n)
+        set Text.XML.LibXML.SAX.parsedEndElement (add . Data.XML.Types.EventEndElement)
+        set Text.XML.LibXML.SAX.parsedCharacters (add . Data.XML.Types.EventContent . Data.XML.Types.ContentText)
+        set Text.XML.LibXML.SAX.parsedCDATA (add . Data.XML.Types.EventCDATA)
+        Text.XML.LibXML.SAX.parseBytes p input
+        readSTRef ref )
+    bs
+#endif
   , bench "conduit" $ nf
     ( \input -> case Data.Conduit.connect (Text.XML.Stream.Parse.parseLBS def input) Data.Conduit.List.consume of
         Nothing -> error "Unexpected parse error"

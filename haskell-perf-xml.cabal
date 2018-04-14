@@ -62,6 +62,8 @@ benchmark time
   if flag(libxml)
     cpp-options: -DLIBXML
     build-depends: libxml
+                 , libxml-sax
+                 , xml-types
   main-is:          Time.hs
   build-depends:    base
                   , bytestring
