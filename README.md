@@ -44,7 +44,7 @@ Conversion from DOM to `Data.Book.Root` data type
 | [xmlbf-xeno][] | Haskell | 137.8 ms |
 | [dom-parser][] | Haskell | 132.9 ms |
 
-Conversion from 'ByteString' to `Data.Book.Root` data type
+Conversion from `ByteString` to `Data.Book.Root` data type
 
 | Name | Language | Time |
 |------|----------|------|
