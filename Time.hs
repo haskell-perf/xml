@@ -4,6 +4,7 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 module Main (main) where
 
@@ -53,14 +54,15 @@ instance NFData XenoEvent
 main :: IO ()
 main = defaultMainWith
   defaultConfig { csvFile = Just "out.csv" }
-  [ bgroup "sax" (sax inputBs)
-  , bgroup "dom" (dom inputBs)
-  , bgroup "struct" (struct inputBs)
+  [ bgroup "bs-sax" (bsSax inputBs)
+  , bgroup "bs-dom" (bsDom inputBs)
+  , bgroup "dom-struct" (domStruct inputBs)
+  , bgroup "bs-struct" (bsStruct inputBs)
   ]
 
 -- | Conversion from 'ByteString' to a list of SAX events
-sax :: ByteString -> [Benchmark]
-sax bs =
+bsSax :: ByteString -> [Benchmark]
+bsSax bs =
   [ bench "xeno fold list" $ nf
     ( Xeno.SAX.fold
       (\v   -> (:v) . OpenTag)
@@ -132,8 +134,8 @@ sax bs =
   ]
 
 -- | Conversion from 'ByteString' to DOM
-dom :: ByteString -> [Benchmark]
-dom bs =
+bsDom :: ByteString -> [Benchmark]
+bsDom bs =
   [ bench "hexml" $ whnf
     ( \input -> case Text.XML.Hexml.parse input of
         Left _  -> error "Unexpected parse error"
@@ -158,9 +160,15 @@ dom bs =
   ]
 
 -- | Conversion from DOM to data type
-struct :: ByteString -> [Benchmark]
-struct bs =
-  [ bench "xmlbf-xeno" $ nf
+domStruct :: ByteString -> [Benchmark]
+domStruct bs =
+  [ bench "sax" $ nf
+    ( \stream -> case SAX.parseSax rootSaxParser stream of
+        SAX.Partial _ _ _ -> error "Unexpected conversion error: Partial"
+        SAX.Done r        -> r
+        SAX.Fail e        -> error $ "Unexpected conversion error: Fail " ++ e )
+    ( SAX.Streaming.streamXml bs )
+  , bench "xmlbf-xeno" $ nf
     ( \case
         Left _  -> error "Unexpected parse error"
         Right n -> case Xmlbf.Xeno.element n of
@@ -168,19 +176,37 @@ struct bs =
           Right node -> case Xmlbf.runParser (Xmlbf.fromXml @Root) [node] of
             Left e  -> error e
             Right v -> v )
-    ( Xeno.DOM.parse inputBs )
-  -- TODO: Fix @SAX.Fail "fail handler"@ error
-  -- , bench "sax" $ nf
-  --   ( \stream -> case SAX.parseSax rootSaxParser stream of
-  --       SAX.Partial _ _ _ -> error "Unexpected conversion error: Partial"
-  --       SAX.Done r        -> r
-  --       SAX.Fail e        -> error $ "Unexpected conversion error: Fail " ++ e )
-  --   ( SAX.Streaming.streamXml bs )
+    ( Xeno.DOM.parse bs )
   , bench "dom-parser" $ nf
-    ( \doc -> case Text.XML.DOM.Parser.runDomParser doc (Text.XML.DOM.Parser.fromDom @Catalog) of
-        Left _  -> error "Unexpected conversion error"
+    ( \doc -> case Text.XML.DOM.Parser.runDomParser doc (Text.XML.DOM.Parser.inElem "catalog" $ Text.XML.DOM.Parser.fromDom @Catalog) of
+        Left e  -> error $ "Unexpected conversion error: " ++ show e
         Right v -> v )
     ( Text.XML.parseLBS_ def (Data.ByteString.Lazy.fromStrict bs) )
+  ]
+
+-- | Conversion from 'ByteString' to data type
+bsStruct :: ByteString -> [Benchmark]
+bsStruct bs =
+  [ bench "sax" $ nf
+    ( \input -> case SAX.parseSax rootSaxParser (SAX.Streaming.streamXml input) of
+        SAX.Partial _ _ _ -> error "Unexpected conversion error: Partial"
+        SAX.Done r        -> r
+        SAX.Fail e        -> error $ "Unexpected conversion error: Fail " ++ e )
+    bs
+  , bench "xmlbf-xeno" $ nf
+    ( \input -> case Xeno.DOM.parse input of
+        Left _  -> error "Unexpected parse error"
+        Right n -> case Xmlbf.Xeno.element n of
+          Left e     -> error e
+          Right node -> case Xmlbf.runParser (Xmlbf.fromXml @Root) [node] of
+            Left e  -> error e
+            Right v -> v )
+    bs
+  , bench "dom-parser" $ nf
+    ( \input -> case Text.XML.DOM.Parser.runDomParser (Text.XML.parseLBS_ def input) (Text.XML.DOM.Parser.inElem "catalog" $ Text.XML.DOM.Parser.fromDom @Catalog) of
+        Left e  -> error $ "Unexpected conversion error: " ++ show e
+        Right v -> v )
+    ( Data.ByteString.Lazy.fromStrict bs )
   ]
 
 inputBs :: ByteString

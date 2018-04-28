@@ -26,7 +26,7 @@ data Book = Book
   , price       :: Centi
   , publishDate :: Day
   , description :: Text
-  } deriving (Generic)
+  } deriving (Show, Generic)
 
 instance NFData Book
 
@@ -39,7 +39,7 @@ instance Arbitrary Book where
     <*> arbDay
     <*> arbText
     where
-      arbText  = T.pack <$> listOf (suchThat arbitrary isPrint)
+      arbText  = T.pack <$> listOf1 (suchThat arbitrary (liftA2 (&&) isAscii isAlphaNum))
       arbPrice = suchThat arbitrary (> 0)
       arbDay   = ModifiedJulianDay <$> choose (1,100000)
 
@@ -53,7 +53,7 @@ instance XW.ToXML Book where
     XW.element "description" $ XW.content (description b)
 
 instance XDP.FromDom Book where
-  fromDom = XDP.inElem "book" $ Book
+  fromDom = Book
     <$> XDP.inElem "author" XDP.textFromDom
     <*> XDP.inElem "title" XDP.textFromDom
     <*> XDP.inElem "genre" XDP.textFromDom
@@ -89,18 +89,18 @@ instance Xmlbf.FromXml Book where
     <*> Xmlbf.pElement "description" Xmlbf.pText
 
 bookSaxParser :: SAX.SaxParser Book
-bookSaxParser = SAX.withTag "book" $ Book
-  <$> SAX.withTag "author" saxText
-  <*> SAX.withTag "title" saxText
-  <*> SAX.withTag "genre" saxText
-  <*> SAX.withTag "price" (read . T.unpack <$> saxText)
-  <*> SAX.withTag "publish_date" (saxText >>= parseTimeM True defaultTimeLocale "%F" . T.unpack)
-  <*> SAX.withTag "description" saxText
+bookSaxParser = SAX.atTag "book" $ Book
+  <$> SAX.atTag "author" saxText
+  <*> SAX.atTag "title" saxText
+  <*> SAX.atTag "genre" saxText
+  <*> SAX.atTag "price" (read . T.unpack <$> saxText)
+  <*> SAX.atTag "publish_date" (saxText >>= parseTimeM True defaultTimeLocale "%F" . T.unpack)
+  <*> SAX.atTag "description" saxText
   where
     saxText = T.decodeUtf8 <$> SAX.bytes
 
 newtype Catalog = Catalog [Book]
-  deriving (Generic, NFData)
+  deriving (Show, Generic, NFData)
 
 instance Arbitrary Catalog where
   arbitrary = Catalog <$> listOf arbitrary
@@ -109,23 +109,26 @@ instance XW.ToXML Catalog where
   toXML (Catalog books) = XW.element "catalog" $ mapM_ XW.toXML books
 
 instance XDP.FromDom Catalog where
-  fromDom = Catalog <$> XDP.inElemAll "catalog" XDP.fromDom
+  fromDom = Catalog <$> XDP.inElemAll "book" XDP.fromDom
 
 instance Xmlbf.FromXml Catalog where
   fromXml = Xmlbf.pElement "catalog" $ Catalog
     <$> many Xmlbf.fromXml
 
 catalogSaxParser :: SAX.SaxParser Catalog
-catalogSaxParser = SAX.withTag "catalog" $ Catalog
+catalogSaxParser = SAX.atTag "catalog" $ Catalog
   <$> many bookSaxParser
 
 newtype Root = Root Catalog
-  deriving (Generic, NFData)
+  deriving (Show, Generic, NFData)
 
 instance Xmlbf.FromXml Root where
   fromXml = Xmlbf.pElement "root" $ Root
     <$> Xmlbf.fromXml
 
+instance XDP.FromDom Root where
+  fromDom = Root <$> XDP.inElem "root" XDP.fromDom
+
 rootSaxParser :: SAX.SaxParser Root
-rootSaxParser = SAX.withTag "root" $ Root
+rootSaxParser = SAX.atTag "root" $ Root
   <$> catalogSaxParser
