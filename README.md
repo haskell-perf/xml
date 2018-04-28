@@ -36,25 +36,60 @@ Conversion from `ByteString` to a list of SAX events
 | [libxml-sax][] | C | 110.2 ms |
 | [xml-conduit][] | Haskell | 196.1 ms |
 
+Conversion from DOM to `Data.Book.Root` data type
+
+| Name | Language | Time |
+|------|----------|------|
+| [sax][] | Haskell | 56.13 ms |
+| [xmlbf-xeno][] | Haskell | 137.8 ms |
+| [dom-parser][] | Haskell | 132.9 ms |
+
+Conversion from 'ByteString' to `Data.Book.Root` data type
+
+| Name | Language | Time |
+|------|----------|------|
+| [sax][] | Haskell | 66.55 ms |
+| [xmlbf-xeno][] | Haskell | 147.6 ms |
+| [dom-parser][] | Haskell | 267.5 ms |
+
 ## Space
 
 ``` bash
 stack test
 ```
 
-| Case          |   Allocated |        Max |       Live | GCs |
-|---------------|-------------|------------|------------|-----|
-| [libxml]      |         480 |        160 |      4,656 |   0 |
-| [hexml]       |   1,118,744 |        216 |      4,520 |   0 |
-| [xeno]        |   8,184,976 |         64 |      4,344 |   2 |
-| [hexpat]      | 122,216,128 | 16,798,072 | 52,907,688 | 117 |
-| [xml-conduit] | 694,404,776 | 24,452,264 | 72,434,280 | 672 |
+Conversion from `ByteString` to DOM
+
+| Case           | Allocated   | GCs |
+|----------------|-------------|-----|
+| hexml          |   1,040,416 |   0 |
+| xeno           |   8,184,976 |   2 |
+| hexpat         |  95,849,656 |  91 |
+| xml-conduit    | 535,804,344 | 519 |
+
+Conversion from DOM to `Data.Book.Root` data type
+
+| Case           | Allocated   | GCs |
+|----------------|-------------|-----|
+| dom/sax        | 201,020,688 | 194 |
+| dom/xmlbf-xeno | 399,888,064 | 387 |
+| dom/dom-parser | 329,051,944 | 317 |
+
+Conversion from `ByteString` to `Data.Book.Root` data type
+
+| Case           | Allocated   | GCs |
+|----------------|-------------|-----|
+| bs/sax         | 201,022,120 | 194 |
+| bs/xmlbf-xeno  | 408,072,976 | 390 |
+| bs/dom-parser  | 864,856,312 | 836 |
 
 
+[dom-parser]: https://hackage.haskell.org/package/dom-parser
 [hexml]: https://hackage.haskell.org/package/hexml
 [hexpat]: https://hackage.haskell.org/package/hexpat
 [libxml]: https://hackage.haskell.org/package/libxml
 [libxml-sax]: https://hackage.haskell.org/package/libxml-sax
 [sax]: https://hackage.haskell.org/package/sax
 [xeno]: https://hackage.haskell.org/package/xeno
+[xmlbf-xeno]: https://hackage.haskell.org/package/xmlbf-xeno
 [xml-conduit]: https://hackage.haskell.org/package/xml-conduit

@@ -30,7 +30,6 @@ import qualified Text.XML.LibXML
 
 main :: IO ()
 main = mainWith $ do
-  setColumns [Case, Allocated, Max, Live, GCs]
   bsDom inputBs
   domStruct inputBs
   bsStruct inputBs
