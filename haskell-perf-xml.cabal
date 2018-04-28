@@ -48,12 +48,17 @@ test-suite space
                   , criterion
                   , data-default
                   , deepseq
+                  , dom-parser
                   , file-embed
+                  , haskell-perf-xml
                   , hexml
                   , hexpat
+                  , sax
                   , weigh
                   , xeno
                   , xml-conduit
+                  , xmlbf
+                  , xmlbf-xeno
   type:             exitcode-stdio-1.0
   default-language: Haskell2010
   ghc-options:      -Wall -O2 -rtsopts
